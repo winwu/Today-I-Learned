@@ -1,4 +1,6 @@
-## 2020-03-04
+
+
+## 2021-03-04
 
 (整理) 自己接手 legacy code 的習慣:
 
@@ -17,3 +19,203 @@
 6. 擴展功能或是原 API 結構或內容有調整，也要多留意原本的變數命名是否符合適當的命名。
 
 7. saga 檔案裡面的 function 的順序跟檔案底部的 export statement 順序要一致。我自己習慣如果是越常用(改)、初始化頁面資料相關的 function 會放在比較上面。
+
+
+## 2021-03-15
+
+最近在處理工作上的新需求，順便改寫前人以及我自己以前的 code，
+整理了幾個範例，以下是我自己平常喜歡的 JavaScript 整理方式 (純個人喜好，請參考參考就好，每個人都有自己喜歡的方式)
+
+
+#### 1) 清除多餘的 value re-assign
+
+如果 Object 的 key 及 value 同名，可直接簡化:
+
+```js
+// before
+const something = {
+    start: 0,
+    size: 10,
+    sortBy: 'name',
+    sortOrder: 'asc'
+};
+
+const { start, size, sortBy, sortOrder } = something;
+const requestParams = {
+    start: start,           // <- here
+    size: size,             // <- here
+    sortBy: sortBy,         // <- here
+    sortOrder: sortOrder    // <- here
+};
+```
+
+
+```js
+// after
+const { start, size, sortBy, sortOrder } = something;
+
+const requestParams = {
+    start,
+    size,
+    sortBy,
+    sortOrder
+};
+```
+
+#### 2) 利用 Object Destructuring assignment 簡化賦值到新物件
+
+```js
+// before
+
+/*
+ * 情境假設:
+ * 後端傳遞的 key 值與實際前端儲存的 key 值不同，就必須要一個一個 re-assign 到指定的 object key
+ * API 回傳的 key 格式不一致，例如大小寫命名不同
+ */
+const response = {
+    data: [],
+    posts_count: 0,
+    hiddenCount: 0,
+    message
+};
+
+const result = {
+    datas: response.data,
+    postCount: response.posts_count,
+    hiddenCount: response.hiddenCount
+    message
+}
+
+return result;
+```
+
+```js
+// after
+const {
+    data: datas,
+    post_count: postCount,
+    hiddenCount,
+    message
+} = response;
+
+const result = {
+    data,
+    postCount,
+    hiddenCount,
+    message
+}
+
+return result;
+```
+
+* Object Destructuring 有很多好用的語法，https://developer.mozilla.org/zh-TW/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
+
+
+#### 3) 利用 optional chaining 簡化不斷巢狀進去物件判斷值存不存在的情況
+
+* 要注意 optional chaining 至少要 TypeScript 3.7 以上才有支援。
+
+```js
+// before
+if (res && res.data && res.data.message) {
+    alert(res.data.message);
+}
+```
+
+```js
+// after
+if (res?.data?.message) {
+    alert(res.data.message);
+}
+```
+
+我通常也會搭配 Nullish coalescing operator (??) 一起使用，?? 代表找不到值時最後的預設值。(有的人可能會疑惑，那為甚麼不用 || 就好了，請參考 https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#nullish-coalescing 說明)
+
+```js
+const res = null;
+
+const msg = res?.data?.message ?? 'No message.';
+alert(msg);
+// 會印出 'No message.'
+```
+
+
+```js
+const res = {
+    data: {
+        message: ''
+    }
+}
+
+const msg = res?.data?.message ?? 'No message.';
+alert(msg);
+// 會印出 ''
+```
+
+
+#### 4) 簡化 if-else statement
+
+如果有一段 code snippets 包含一堆 if-else 只是為了去新增/修正/移除某個物件的值，我自己是看了有點煩躁，除非整段寫起來的行氣有一個 grouping 的感覺或是真的沒有修改太多屬性，不然真的是在整追 code 的人吧?! 誰知道哪個值到底是哪裡被改掉，說不定中間還穿插一些不相關的判斷呢。
+
+```js
+// before
+const meals = {
+    breakfast: null,
+    lunch: 'curry',
+    dessert: 'French fries'
+};
+
+if (iHaveTime) {
+    meals.breakfast = 'sandwich';
+}
+
+if (tasksFinished) {
+    meals.dessert = meals.dessert + ' and coke';
+} else {
+    delete meals.dessert;
+}
+
+```
+
+```js
+// after
+const meals = {
+    breakfast: iHaveTime ? 'sandwich' : null,
+    lunch: 'curry',
+    ... (tasksFinished ? { dessert: 'French fries and coke'} : {}) 
+    // 也可以是 ... (tasksFinished ? { dessert: 'French fries and coke'} : undefined ) ，看情況啦~
+};
+```
+
+
+#### 5) 參數簡化
+
+```js
+// before
+function onChange(e) {
+    console.log('e.data', e.data);
+    console.log('e.message', e.message);
+}
+
+onChange({data: 'abc', message: 'success' })
+
+// output
+// e.data abc
+// e.message success
+
+```
+
+```js
+// before
+function onChange({ data, message }) {
+    console.log('data', data);
+    console.log('message', message);
+}
+
+onChange({data: 'abc', message: 'success' })
+
+// output
+// e.data abc
+// e.message success
+
+```
