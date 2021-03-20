@@ -16,3 +16,6 @@ just put some notes, if any question / concerns / typos,  please email to me,  I
 6. 創客創業導師程天縱的專業力
 7. 創客創業導師程天縱的職場力
     * 還蠻推薦的一本書，尤其是進入職場有幾年時間的人，應該也蠻適合想要往主管職發展的人<-我自己是這麼認為
+8. JavaScript 深入精要 (歐萊禮)
+9. 真確
+10. 無卡無現金時代：網路支付業務規劃設計及實作 （讀書會分享的書籍)

@@ -219,3 +219,230 @@ onChange({data: 'abc', message: 'success' })
 // e.message success
 
 ```
+
+
+## 2021-03-21
+
+### [讀書筆記] 淺談 JavaScript 的 prototype
+
+閱讀書籍為: [JavaScript 深入精要](https://www.tenlong.com.tw/products/9789863470120?list_name=srh) - Cody Lindley 著、賴屹民 譯
+
+這本書是幾年前一個朋友送我的，還蠻薄的一本書，不過指出很多 JavaScript 使用上的細微的差異，有很多東西我都蠻想記錄下來的，不過今天就以函式的 prototype 為主要的筆記。
+
+* JavaScript 是用 prototype 的機制來實現繼承屬性跟方法，例如建立一個字串變數，而所有的字串都能呼叫 toLocaleLowerCase 這個方法，為什麼有 toLocaleLowerCase 這樣的方法可以使用?，其原因就在於 toLocaleLowerCase 這個方法是繼承自 String function 的 prototype 中。也因為原型繼承的關係，使我們能夠有效率的使用一樣的程式邏輯。
+
+    ```js
+    // console
+
+    var a = "aa";
+    var b = "bb";
+    var c = "cc";
+
+    console.log(a.constructor);
+    console.log(b.constructor);
+    console.log(c.constructor);
+
+    // ƒ String() { [native code] }
+    // ƒ String() { [native code] }
+    // ƒ String() { [native code] }
+
+    aa.constructor.prototype.toLocaleLowerCase
+    // ƒ toLocaleLowerCase() { [native code] }
+    ```
+
+
+* 使用 JavaScript 建立一個 function 之後，一定會配給一個 prototype 的屬性 (雖然裡面沒有東西)，但是我們可以存取得到 prototype 這個屬性值:
+
+     ```js
+    var order = function() {};
+    // undefined
+
+    // prototype 的屬性是來自於 Function() 這個建構式
+    order.prototype
+    // {constructor: ƒ}
+
+    console.log(order.prototype);
+    // 得到 undefined
+    ```
+
+    不過這邊有一點很特別，使用 arrow function 定義的 function 卻沒自動配給一個 prototype 的屬性，原因就只是因為 arrow function 本來就不會配 prototype 屬性，這是刻意的，因為 arrow function 就是被設計成比較輕巧的，另一個方面可以跟 this 的 scope 有關，可以參考 stackoverflow 上的這篇參考: [Why can't we create prototypes using ES6 Arrow Functions?](https://stackoverflow.com/questions/51416486/why-cant-we-create-prototypes-using-es6-arrow-functions) 或是自行查找網路資料瞜！
+
+    ```js
+    const aa = () => {}
+
+    // 透過瀏覽器 Console 介面中輸入 aa. 之後，不會有 prototype 的屬性可以讀取
+    // 但是還是可以透過 console.log 取值看看 ，只是會顯示 undefined
+
+    console.log(aa.prototype)
+    // undefined
+    ````
+
+* JavaScript 在尋找屬性時的順序是，先在該物件查找，如果沒有，從上一層 prototype 裡面查找，再沒有，會去 Object.prototype 屬性裡面查找，**Object.prototype 是查找屬性的最後目的地了**，如果這裡也沒有找到，就會回傳 undefined。以下是我自己在練習時測試的幾個範例。
+
+    範例1:
+
+    ```js 
+    var morning = [];
+
+    console.log(morning.sayHello);
+    // undefined
+    // 查找過程: morning.sayHello -> Array.prototype.sayHello -> Object.prototype.sayHello 
+
+    ```
+
+
+    範例 2:
+
+    ```js
+    var morning = [];
+
+    console.log(morning.sayHello)
+    // sayHello 屬性不存在，因此得到 undefined
+
+
+    // 我在 morning 上自己新增一個 sayHello 的方法 
+    morning.sayHello = function() { console.log('say hello at morning') };  
+
+    // 我在 Array 的 prototype 上也新增一個 sayHello 方法 
+    morning.constructor.prototype.sayHello = function() { console.log('say hello from Array prototype') };
+    // 也可以是: Array.prototype.sayHello = function() { console.log('say hello from Array prototype') };
+
+    // 呼叫 sayHello，因為 morning 已有定義 sayHello 屬性，因此不會在往上(Array 的 prototype) 查找
+    morning.sayHello()
+    // say hello at morning
+
+    morning.constructor.prototype.sayHello()
+    // say hello from Array prototype
+
+    ```
+
+
+    範例 3:
+
+    ```js
+    var morning = [];
+
+    console.log(morning.sayHello)
+    // 因為 sayHello 屬性不存在，因此得到 undefined
+
+    // 我在 Object 的 prototype 上也新增一個 sayHello 方法 
+    Object.prototype.sayHello = function() { console.log('say hello from Object prototype') };  
+
+    // 呼叫 sayHello
+    morning.sayHello()
+    // 查找過程: morning.sayHello -> Array.prototype.sayHello -> Object.prototype.sayHello 
+    // 因為 morning 沒有定義，Array.prototype 也沒有，但是 object.prototype 有
+    // say hello from Object prototype
+
+
+    // Array.prototype
+    // [constructor: ƒ, concat: ƒ, copyWithin: ƒ, fill: ƒ, find: ƒ, …]
+
+    // Object.prototype
+    // {sayHello: ƒ, constructor: ƒ, __defineGetter__: ƒ, __defineSetter__: ƒ, hasOwnProperty: ƒ, …}
+    ```
+
+### [補充] 要注意的一點
+
+* 所有加入到 Object.prototype 的屬性都會在 for..in 迴圈顯示，因為 for in 會 iterate 所有包括自有和繼承而來的屬性。這也是為什麼有時候使用 for...in 而我們的裝的 linter 可能會跳出一個 warning 訊息，告知要使用 hasOwnProperty 優先判斷屬性是否存在的原因。
+
+```js
+// 在原形鏈中加入 aaa, bbb 兩個屬性
+Object.prototype.aaa = 10;
+Object.prototype.bbb = 20;
+
+let members = {
+    cc: 30,
+    dd: 40,
+};
+
+for (let k in members) {
+   console.log(k);
+}
+
+// cc
+// dd
+// aaa
+// bbb
+```
+
+* 如果只想要 iterate 該物件自己擁有的屬性，可以使用 Object.keys()。
+
+```js
+Object.keys(members).forEach((k) => {
+    console.log(k);
+})
+
+// cc
+// dd
+```
+
+--- 補充結束，以下回到 prototype ---
+
+
+* prototype 的屬性是 ***動態*** 的，動態的意思是什麼？物件取得屬性值的時候，不論那個值什麼時候被修改、或是新增一個值(注意，是修改跟新增，下一段會繼續談另一個情況)，都是拿到最新的值，因為這些值都還是跟 prototype 綁在一起的。
+
+```js
+// 建立一個員工福利的 function，其中儲存各種假期天數跟福利 blabla 好啦，不重要 XD 只是個舉例～
+var employeeBenefits = function employeeBenefits() {};
+
+// 預設員工可以請的病假天數是 15
+employeeBenefits.prototype.sickLeaveDays = 15;
+
+// 有一家公司以 employeeBenefits 也作為自家的員工福利政策
+var ourCompanyBenefits = new employeeBenefits(); 
+console.log(ourCompanyBenefits.sickLeaveDays);
+// 15
+
+// 將 employeeBenefits 的病假天數調整為 30
+employeeBenefits.prototype.sickLeaveDays = 30;
+
+// 此時再次取得這家公司的病假天數，會得到最新的 30 天
+console.log(ourCompanyBenefits.sickLeaveDays)
+// 30
+
+// 擴充 sickLeaveDays，從值變成一個 object 看看
+employeeBenefits.prototype.sickLeaveDays = {
+   paid: 15,
+   unpaid: 15
+};
+
+// 換成物件也是一樣，此時在取得這家公司的 sickLeaveDays，會取得到最新的物件
+console.log(ourCompanyBenefits.sickLeaveDays);
+// {paid: 15, unpaid: 15}
+
+```
+
+* 上一點，可以清楚地看出 prototype 裡面的值怎麼被調換，新增，都是取得到最新的結果，但有一種情況是例外，也就是將整個 prototype 換掉，那情況可就不一樣了，上一段的例子，調整、新增的部位可是 prototype 裡面的屬性，但是當 **整個** prototype 是被修改的目標，就沒有辦法保持原形連結的關係，而是變成一個新的原型了，不過已經實例化過的物件，還是會綁定在原有的 prototype 上，不會被更新成新的。
+
+
+```js
+var employeeBenefits = function employeeBenefits() {};
+employeeBenefits.prototype.sickLeaveDays = 15;
+
+
+var ourCompanyBenefits = new employeeBenefits(); 
+console.log(ourCompanyBenefits.sickLeaveDays);
+// 15
+
+// 注意: 這裡是替換掉整個 prototype
+employeeBenefits.prototype = {
+    sickLeaveDays: {
+       paid: 0,
+       unpaid: 30
+    }
+}
+
+console.log(ourCompanyBenefits.sickLeaveDays);
+// 依舊得到 15
+// ourCompanyBenefits 還是參考到它當初初始化時的 prototype，已經不是連結到最新的了，因為 employeeBenefits 的 prototype 已經被整個替換掉了 (已失去鏈結。)
+
+
+// 建立一個新的 company 由 employeeBenefits 實例化而來
+var anotherCompanyBenefits = new employeeBenefits();
+console.log(anotherCompanyBenefits.sickLeaveDays);
+
+// {paid: 0, unpaid: 30}
+```
+
+(讓連結斷掉的情況感覺很奇妙，我是想不到什麼時候會這樣做，總之在操作 prototype 時要注意，身為學習者，知道會有這樣的差異應該就可以了吧 XD)
