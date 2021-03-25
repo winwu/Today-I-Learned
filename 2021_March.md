@@ -446,3 +446,23 @@ console.log(anotherCompanyBenefits.sickLeaveDays);
 ```
 
 (讓連結斷掉的情況感覺很奇妙，我是想不到什麼時候會這樣做，總之在操作 prototype 時要注意，身為學習者，知道會有這樣的差異應該就可以了吧 XD)
+
+
+## 2021-03-25
+
+Java 學習筆記
+
+#### 獨體模式 Singleton
+
+* 使用 synchronized 同步化的方法
+    可能會增加執行效率的負擔，因為 synchronized() 方法會等待別的正在執行這個程式的執行緒完成才開始，優點是能夠確保同一時間不會有機會同時執行同一個方法。
+
+* 取消拖延實體化 lazy instantiaze 而改使用預先 (eagerly) 實體化該 Singleton。
+
+    ```java
+    private static Singleton thisInstance = new Singleton();
+    ```
+
+* 雙重檢查鎖
+    使用 volatile 搭配 synchronized，能達到: volatile 去檢查 Singleton 有沒有被建立，如果沒有就在建構式使用 synchronized，然後在裡面在實例化 Singleton。
+
