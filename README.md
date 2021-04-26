@@ -19,3 +19,5 @@ just put some notes, if any question / concerns / typos,  please email to me,  I
 8. JavaScript 深入精要 (歐萊禮)
 9. 真確
 10. 無卡無現金時代：網路支付業務規劃設計及實作 （讀書會分享的書籍)
+11. 記得你是誰：哈佛的最後一堂課 
+12. 極速開發 Java 大型系統：Spring Boot 又輕又快又好學
