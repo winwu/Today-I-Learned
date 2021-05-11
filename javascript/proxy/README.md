@@ -1,6 +1,9 @@
-# JavaScript Proxy 的練習紀錄
+# JavaScript Proxy 
 
-## 1_Array.html
+
+## 各種嘗試
+
+### 1_Array.html
 
 <img src="../../../main/javascript/proxy/assets/demo_1.png?raw=true">
 
@@ -16,7 +19,7 @@ Proxy 主要是用來代理物件的行為，在這個範例使用 Array 的結�
 這個範例比較需要注意的部分是在於因為操作 Array 會影響 length 的數量，因此在 proxy 過程中 set 會被呼叫兩次，其中一次正是因為 array length 的異動 (length 本身也是個 property，但 length 異動不需要觸發 render 表格的行為，因此需要將 length 被異動時的操作跳過不處理 (如範例 html 中的 `if (property === 'length') {  return true; }` )
 
 
-## 2_Object.html
+### 2_Object.html
 
 <img src="../../../main/javascript/proxy/assets/demo_2.png?raw=true">
 
@@ -71,7 +74,7 @@ tableNode.addEventListener('click', (e) => {
 ```
 
 
-## 3_DataTable.html
+### 3_DataTable.html
 
 <img src="../../../main/javascript/proxy/assets/demo_3.png?raw=true">
 
