@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Proxy - Practice - Object</title>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div>
+        <h1>Two way data-binding table (Using Object)</h1>
+
+        <button id="add-btn">Add</button>
+        <dialog id="add-dialog">
+            <form action="#" method="dialog">
+                <label for="user-name">Name:</label>
+                <input id="user-name" type="text" name="name">
+                <br>
+                <button value="cancel">Cancel</button>
+                <button type="submit">Save</button>
+            </form>
+        </dialog>
+        <table class="table-container"></table>
+    </div>
+
+    <script type="text/babel">
+        const tableData = {
+            data: null
+        };
+        
+        const tableProxy = new Proxy(tableData, {
+            set: (target, property, value) => {
+                Reflect.set(target, property, value);
+                tableNode.render(value);
+                return true;
+            }
+        });
+
+        const tableNode = document.querySelector('.table-container');
+        tableNode.render = function render(data) {
+            let tr = [];
+            data.forEach((d, index) => {
+                tr.push(`<tr>
+                    <td>${d.id}</td>
+                    <td>${d.name}</td>
+                    <td><button class="delete-btn" data-index=${index} data-item=${JSON.stringify(d)}>Delete</button></td>
+                </tr>`);
+            });
+
+            this.innerHTML = `
+                <thead>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </thead>
+                <tbody>${tr.join('')}</tbody>
+            `;
+        }
+
+        const addBtn = document.querySelector("#add-btn");
+        const addDialog = document.querySelector('#add-dialog');
+        const addSubmit = addDialog.querySelector('button[type="submit"]');
+        addBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (typeof addDialog.showModal === 'function') {
+                addDialog.showModal();
+            } else {
+                alert('This browser is not supported <dialog>');
+            }
+        });
+        addSubmit.addEventListener('click', (e) => {
+            const name = addDialog.querySelector('input[name="name"]').value;
+            if (name) {
+                const original = tableProxy.data;
+                const newData = original.concat([{ id: original.length + 1, name }]);
+                tableProxy.data = newData;
+
+                // reset
+                addDialog.querySelector('input[name="name"]').value = '';
+            }
+        });
+
+        tableNode.addEventListener('click', (e) => {
+            if (e.target.className === 'delete-btn') {
+                const removeIndex = e.target.dataset.index;
+                const original = tableProxy.data;
+                original.splice(removeIndex, 1);
+                if (removeIndex) {
+                    tableProxy.data = original;
+                }
+            }
+        });
+
+        // initial data
+        tableProxy.data = [
+            { id: 1, name: 'winwu' },
+            { id: 2, name: 'ant' },
+            { id: 3, name: 'ter' },
+            { id: 4, name: 'stan' },
+            { id: 5, name: 'curt' },
+            { id: 6, name: 'andy' },
+            { id: 7, name: 'chrisss' },
+            { id: 8, name: 'amy' },
+            { id: 9, name: 'zoo' },
+            { id: 10, name: 'Drink' } 
+        ];
+    </script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Proxy - Practice - DataTable</title>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Two way data-binding table (Simple Version)</h1>
+        <div class="table-container">
+            <div class="alert"><!--added by JS--></div>
+            <div class="text-right">
+                <input type="search" name="q" value="" />
+                <button class="refresh-btn">Refresh</button>
+            </div>
+            <table>
+                <thead><!--added by JS--></thead>
+                <tbody><!--added by JS--></tbody>
+            </table>
+            <div class="masking">Loading</div>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const tableData = {
+            loading: false,
+            total: null,
+            sort: 'stars', // best match
+            order: 'desc',
+            query: 'react',
+            page: 1,
+            size: 10,
+            data: null,
+            errors: []
+        };
+
+        const tableProxy = new Proxy(tableData, {
+            set: (target, property, receiver) => {
+                Reflect.set(target, property, receiver);
+                if (property === 'data') {
+                    // 重新 render table
+                    tableNode.renderTable(receiver, target.sort, target.order);
+                }
+                if (property === 'total') {
+                    // 重新 render pager
+                    tableNode.renderPager(target.total, target.size, target.page);
+                }
+                if (property === 'loading') {
+                    // 顯示 loading
+                    tableNode.renderLoading(target[property]);
+                }
+                if (property === 'query') {
+                    // 搜尋字詞修正
+                    tableNode.renderSearch(target[property]);
+                }
+                if (property === 'errors') {
+                    tableNode.renderError(target[property]);
+                }
+                return true;
+            }
+        });
+
+        async function fetchData() {
+            const query = {
+                q: tableProxy.query,
+                sort: tableProxy.sort,
+                order: tableProxy.order,
+                page: tableProxy.page,
+                per_page: tableProxy.size
+            };
+
+            const response = await fetch(`https://api.github.com/search/repositories?${new URLSearchParams(query)}`);
+            return await response.json();
+
+        };
+
+        const loadData = () => {
+            tableProxy.loading = true;
+            fetchData().then((data) => {
+                tableProxy.loading = false;
+                tableProxy.total = data?.total_count ?? 0;
+                tableProxy.data = data?.items ?? [];
+                tableProxy.errors = data?.errors ? data.errors : data?.message ? [data.message] : [];
+            })
+        }
+
+        const tableNode = document.querySelector('.table-container');
+
+        tableNode.renderSearch = function(value) {
+            this.querySelector('input[type="search"]').value = value;
+        }
+        tableNode.renderLoading = function(isLoading) {
+            this.querySelector('.masking')?.classList?.toggle('d-none', !isLoading);
+        }
+        tableNode.renderTable = function(data, sort, order) {
+            if (!data.length) {
+                return this.querySelector('table tbody').innerHTML = `<tr colspan="5">No data available</tr>`;
+            }
+            const descIcon = '↓';
+            const ascIcon = '↑';
+            const getArrow = (name) => {
+                let result = '';
+                return `
+                    <span class="sort-arrow${sort === name && order === 'desc' ? ' active' : ''}" role="button" data-sort=${name} data-order="desc" title="sort by desc">${descIcon}</span>
+                    <span class="sort-arrow${sort === name && order === 'asc' ? ' active' : ''}" role="button" data-sort=${name} data-order="asc" title="sort by asc">${ascIcon}</span>
+                `;
+            }
+
+            let tr = [];
+            data.forEach((d, index) => {
+                tr.push(`<tr>
+                    <td>${d.id}</td>
+                    <td>${d.owner?.login}</td>
+                    <td><a href="${d.html_url}" target="_blank">${d.name}</a></td>
+                    <td>${d.stargazers_count}</td>
+                    <td>${d.forks}</td>
+                </tr>`);
+            });
+
+            this.querySelector('table thead').innerHTML = `
+                <th>Id</th>
+                <th>Owner</th>
+                <th>Name${ getArrow('name') }</th>
+                <th>Star${ getArrow('stars') }</th>
+                <th>Forks${ getArrow('forks') }</th>
+            `;
+            this.querySelector('table tbody').innerHTML = tr.join('');
+        }
+
+        tableNode.renderError = function(errors) {
+            this.querySelector('.alert').innerHTML = `${ errors.map((ary) => {
+                    return Object.values(ary).join(' ')
+                }).join('<br/>')}`;
+        }
+
+        tableNode.renderPager = function renderPager(total, size, currentPage) {
+            console.log(`render pager total: ${total} and size: ${size} crrent ${currentPage}`);
+            const realTotalPage = Math.ceil(total/size);
+
+            // Only the first 1000 search results are available
+            const totalPage = realTotalPage > 100 ? 100 : realTotalPage;
+            // 最小頁數
+            const min = currentPage - 4 <= 1 ? 1 : currentPage - 4;
+            // 最大頁數
+            const max =  min + 9 > totalPage ? totalPage : min + 9;
+
+            let lis = [];
+            if (currentPage > 1) {
+                lis.push(`
+                    <li class="page-item" data-page='1' role="button">First</li>
+                    <li class="page-item" data-page=${currentPage - 1} role="button">Prve</li>
+                `);
+            }
+
+            for (let i = min; i < max; i++) {
+                lis.push(`<li class="page-item${ Number(currentPage) === Number(i) ? ' active' : '' }" data-page=${i} role="button">${i}</li>`);
+            };
+
+            if (currentPage < totalPage) {
+                lis.push(`
+                    <li class="page-item" data-page=${currentPage + 1} role="button">Next</li>
+                    <li class="page-item" data-page=${totalPage} role="button">Last</li>
+                `);
+            }
+            const content = `<ul>${lis.join('')}</ul>`;
+
+            if (this.querySelector('.table-pager')) {
+                this.querySelector('.table-pager').innerHTML = content;
+            } else {
+                this.insertAdjacentHTML('beforeend',  `<div class="table-pager">${content}</div>`);
+            }
+        }
+
+        tableNode.addEventListener('click', (e) => {
+            if (e.target.className === 'refresh-btn') {
+                loadData();
+            }
+            if (e.target.className === 'page-item') {
+                tableProxy.page = e.target.dataset.page;
+                loadData();
+            }
+            if (e.target.className === 'sort-arrow') {
+                const { sort, order } = e.target.dataset;
+                tableProxy.sort = sort;
+                tableProxy.order = order;
+                tableProxy.page = 1;
+
+                loadData();
+            }
+        });
+
+
+        const debounce = (func, delay = 1000) => {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay)
+            }
+        };
+
+        tableNode.querySelector('input[type="search"]').addEventListener('input', debounce((e) => {
+            console.log('Search term | ', e.target.value);
+
+            tableProxy.query = e.target.value;
+            loadData();
+        }, 300));
+
+        // initial data
+        tableProxy.query = 'react';
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Proxy - Practice - Array</title>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div>
+        <h1>Two way data-binding Table (Using Array)</h1>
+
+        <button id="add-btn">Add</button>
+        <dialog id="add-dialog">
+            <form action="#" method="dialog">
+                <label for="user-name">Name:</label>
+                <input id="user-name" type="text" name="name">
+                <br>
+                <button value="cancel">Cancel</button>
+                <button type="submit">Save</button>
+            </form>
+        </dialog>
+        <table class="table-container"></table>
+    </div>
+
+    <script type="text/babel">
+        let tableData = [];
+        const tableProxy = new Proxy(tableData, {
+            set: (target, property, value) => {
+                Reflect.set(target, property, value);
+                // due to the data source is Array,
+                // when push a item into Array, the 'set' method will be invoked twice.
+                // first time is because we push item into array, the second time is because the length of its array increment by 1.
+                if (property === 'length') {
+                    return true;
+                }
+                tableNode.render(tableData);
+                return true;
+            },
+            deleteProperty: (target, property) => {
+                Reflect.deleteProperty(target, property);
+                tableNode.render(tableData);
+                return true;
+            }
+        });
+
+        const tableNode = document.querySelector('.table-container');
+        tableNode.render = function render(data) {
+            let tr = [];
+            data.forEach((d, index) => {
+                tr.push(`<tr>
+                    <td>${d.id}</td>
+                    <td>${d.name}</td>
+                    <td><button class="delete-btn" data-index=${index} data-item=${JSON.stringify(d)}>Delete</button></td>
+                </tr>`);
+            });
+
+            this.innerHTML = `
+                <thead>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </thead>
+                <tbody>${tr.join('')}</tbody>
+            `;
+        }
+
+        const addBtn = document.querySelector("#add-btn");
+        const addDialog = document.querySelector('#add-dialog');
+        const addSubmit = addDialog.querySelector('button[type="submit"]');
+        addBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (typeof addDialog.showModal === 'function') {
+                addDialog.showModal();
+            } else {
+                alert('This browser is not supported <dialog>');
+            }
+        });
+        addSubmit.addEventListener('click', (e) => {
+            const name = addDialog.querySelector('input[name="name"]').value;
+            if (name) {
+                const newData = { id: tableProxy.length + 1, name };
+                tableProxy.push(newData);
+                // reset
+                addDialog.querySelector('input[name="name"]').value = '';
+            }
+        });
+
+        tableNode.addEventListener('click', (e) => {
+            if (e.target.className === 'delete-btn') {
+                const removeIndex = e.target.dataset.index;
+                delete tableProxy[removeIndex];
+            }
+        });
+
+        // initial data
+        tableProxy.push({ id: 1, name: 'winwu' });
+    </script>
+</body>
+</html>
