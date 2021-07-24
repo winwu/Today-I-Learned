@@ -24,3 +24,4 @@ just put some notes, if any question / concerns / typos,  please email to me,  I
 14. 高生產力軟體開發實務 以Java專案驅動的基礎指南
 15. 架構之美 （只看了一半的章節）
 16. 資料密集型應用系統設計 (讀書會分享的書籍)
+17. 語意軟體設計：現代架構師的新理論與實務指南 (只看部分章節)
