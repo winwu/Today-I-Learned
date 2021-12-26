@@ -25,3 +25,5 @@ just put some notes, if any question / concerns / typos,  please email to me,  I
 15. 架構之美 （只看了一半的章節）
 16. 資料密集型應用系統設計 (讀書會分享的書籍)
 17. 語意軟體設計：現代架構師的新理論與實務指南 (只看部分章節)
+18. React 17 Design Patterns and Best Practices
+19. Atomic Habits: An Easy & Proven Way to Build Good Habits & Break Bad Ones
