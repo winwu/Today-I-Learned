@@ -4,6 +4,9 @@ just put some notes, if any question / concerns / typos,  please email to me,  I
 
 ### Book list of 2022:
 
+1. Eloquent JavaScript 3rd edition (2018)
+
+---
 
 ### Book list of 2021:
 
